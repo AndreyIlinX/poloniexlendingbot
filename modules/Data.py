@@ -2,7 +2,9 @@ import datetime
 import time
 from decimal import Decimal
 from urllib import urlopen
+from urllib2 import build_opener
 import json
+
 
 api = None
 log = None
@@ -113,10 +115,18 @@ def update_conversion_rates(output_currency, json_output_enabled):
                 log.updateOutputCurrency('highestBid', 1 / float(highest_bid))
                 log.updateOutputCurrency('currency', output_currency)
             except ValueError:
-                log.log_error("Failed to find the exchange rate for outputCurrency {0}! Using BTC as output currency"
-                              .format(output_currency))
-                log.log_error("Make sure that {0} is either traded on Poloniex or supported by blockchain.info: {1}"
-                              .format(output_currency, "https://blockchain.info/api/exchange_rates_api"))
+                try:
+                    opener = build_opener()
+                    resource = opener.open(url)
+                    highest_bid = resource.read()
+                    resource.close()
+                    log.updateOutputCurrency('highestBid', 1 / float(highest_bid))
+                    log.updateOutputCurrency('currency', output_currency)
+                except ValueError:
+                    log.log_error("Failed to find the exchange rate for outputCurrency {0}! Using BTC as output currency"
+                                  .format(output_currency))
+                    log.log_error("Make sure that {0} is either traded on Poloniex or supported by blockchain.info: {1}"
+                                  .format(output_currency, "https://blockchain.info/api/exchange_rates_api"))
             except:
                 log.log_error("Can't connect to {0} using BTC as the output currency".format(url))
 
